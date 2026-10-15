@@ -4,7 +4,8 @@ from core.probes.base import Probe
 
 
 class PromptInjectionProbe(Probe):
-
+    attack_type = "prompt_injection"
+    
     def __init__(self, payload: str):
         self.payload = payload
 

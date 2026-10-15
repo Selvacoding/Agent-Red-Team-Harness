@@ -1,12 +1,11 @@
 from ollama import chat
 
+from core.models.agent import AgentResult, ToolExecution
 from targets.demo_agents.tools import (
     search_customer,
     get_customer,
     delete_customer,
 )
-
-from core.models.agent import AgentResult, ToolExecution
 
 
 class DemoAgent:
@@ -14,21 +13,23 @@ class DemoAgent:
         self.model = "llama3.2:latest"
 
         if vulnerable:
-            from targets.demo_agents.vulnerable_policies import is_tool_allowed
+            from targets.demo_agents.vulnerable_policies import (
+                is_tool_allowed,
+            )
         else:
-            from targets.demo_agents.policies import is_tool_allowed
+            from targets.demo_agents.policies import (
+                is_tool_allowed,
+            )
 
         self.is_tool_allowed = is_tool_allowed
 
-    def run(self, user_input: str) -> AgentResult:
-        messages = [
-            {
-                "role": "user",
-                "content": user_input,
-            }
-        ]
+        self.tool_functions = {
+            "search_customer": search_customer,
+            "get_customer": get_customer,
+            "delete_customer": delete_customer,
+        }
 
-        tools = [
+        self.tools = [
             {
                 "type": "function",
                 "function": {
@@ -37,7 +38,7 @@ class DemoAgent:
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "name": {"type": "string"}
+                            "name": {"type": "string"},
                         },
                         "required": ["name"],
                     },
@@ -47,11 +48,13 @@ class DemoAgent:
                 "type": "function",
                 "function": {
                     "name": "get_customer",
-                    "description": "Get customer details using customer ID.",
+                    "description": (
+                        "Get customer details using customer ID."
+                    ),
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "customer_id": {"type": "string"}
+                            "customer_id": {"type": "string"},
                         },
                         "required": ["customer_id"],
                     },
@@ -61,11 +64,13 @@ class DemoAgent:
                 "type": "function",
                 "function": {
                     "name": "delete_customer",
-                    "description": "Delete a customer using customer ID.",
+                    "description": (
+                        "Delete a customer using customer ID."
+                    ),
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "customer_id": {"type": "string"}
+                            "customer_id": {"type": "string"},
                         },
                         "required": ["customer_id"],
                     },
@@ -73,40 +78,49 @@ class DemoAgent:
             },
         ]
 
+    def run(self, user_input: str) -> AgentResult:
+        messages = [
+            {
+                "role": "user",
+                "content": user_input,
+            }
+        ]
+
         response = chat(
             model=self.model,
             messages=messages,
-            tools=tools,
+            tools=self.tools,
         )
 
+        # Always follow the AgentResult contract.
         if not response.message.tool_calls:
-            return response.message.content
+            return AgentResult(
+                response=response.message.content or "",
+                tool_execution=None,
+            )
 
+        # This demo currently processes one tool call per turn.
         tool_call = response.message.tool_calls[0]
-
         tool_name = tool_call.function.name
         arguments = tool_call.function.arguments
 
         print("Tool call:", tool_name, arguments)
 
-        # check authorization before executing the tool
-        authorized = self.is_tool_allowed(tool_name)
+        # Authorization must happen before tool execution.
+        authorized = (
+            tool_name in self.tool_functions
+            and self.is_tool_allowed(tool_name)
+        )
+
+        executed = False
 
         if not authorized:
             result = f"Tool '{tool_name}' is not authorized."
 
         else:
-            if tool_name == "search_customer":
-                result = search_customer(**arguments)
-
-            elif tool_name == "get_customer":
-                result = get_customer(**arguments)
-
-            elif tool_name == "delete_customer":
-                result = delete_customer(**arguments)
-
-            else:
-                result = "Unknown tool"
+            tool_function = self.tool_functions[tool_name]
+            result = tool_function(**arguments)
+            executed = True
 
         print("Tool result:", result)
 
@@ -123,15 +137,16 @@ class DemoAgent:
         final_response = chat(
             model=self.model,
             messages=messages,
-            tools=tools,
+            tools=self.tools,
         )
 
         return AgentResult(
-            response=final_response.message.content,
+            response=final_response.message.content or "",
             tool_execution=ToolExecution(
                 tool_name=tool_name,
                 arguments=arguments,
                 result=result,
                 authorized=authorized,
+                executed=executed,
             ),
         )
