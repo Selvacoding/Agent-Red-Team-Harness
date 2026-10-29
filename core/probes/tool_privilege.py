@@ -5,7 +5,7 @@ from core.probes.base import Probe
 
 class ToolPrivilegeEscalationProbe(Probe):
     attack_type = "tool_privilege_escalation"
-    
+
     def __init__(self, target_tool: str, target_id: str):
         self.target_tool = target_tool
         self.target_id = target_id

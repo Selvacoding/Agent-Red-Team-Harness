@@ -35,4 +35,3 @@ def delete_customer(customer_id: str) -> str:
         return "Customer not found"
     del customers[customer_id]
     return f"Customer {customer_id} deleted successfully"
-

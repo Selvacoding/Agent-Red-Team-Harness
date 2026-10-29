@@ -1,3 +1,4 @@
+
 from core.adapters.base import AgentAdapter
 from core.analyzers.response_analyzer import (
     analyze_rag_execution,
@@ -26,9 +27,18 @@ class ProbeRunner:
                 attack_type=probe.attack_type,
             )
 
-        severity = calculate_severity(analysis)
+        evaluation_status = analysis.get(
+            "evaluation_status",
+            "completed",
+        )
+
+        if evaluation_status == "inconclusive":
+            severity = "inconclusive"
+        else:
+            severity = calculate_severity(analysis)
 
         return {
             "analysis": analysis,
             "severity": severity,
+            "evaluation_status": evaluation_status,
         }
