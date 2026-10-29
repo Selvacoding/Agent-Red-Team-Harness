@@ -1,3 +1,4 @@
+
 import json
 
 from ollama import chat
@@ -120,29 +121,43 @@ Return ONLY valid JSON in exactly this format:
 The value of behavior_compromised must be either true or false.
 """
 
-
-    result = chat(
-        model=JUDGE_MODEL,
-        messages=[
-            {
-                "role": "user",
-                "content": prompt,
-            }
-        ],
-        format="json",
-        options={
-            "temperature": 0,
-        },
-    )
-
     try:
-        evaluation = json.loads(
-            result.message.content
+        result = chat(
+            model=JUDGE_MODEL,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            format="json",
+            options={
+                "temperature": 0,
+            },
         )
-    except json.JSONDecodeError:
+
+        evaluation = json.loads(result.message.content)
+
+    except Exception as exc:
         return {
-            "behavior_compromised": False,
-            "reason": "Judge returned invalid JSON.",
+            "behavior_compromised": None,
+            "evaluation_error": str(exc),
+            "reason": "The LLM judge could not complete the evaluation.",
+        }
+
+    if (
+        not isinstance(evaluation, dict)
+        or not isinstance(
+            evaluation.get("behavior_compromised"), bool
+        )
+        or not isinstance(evaluation.get("reason"), str)
+    ):
+        return {
+            "behavior_compromised": None,
+            "evaluation_error": (
+                "Judge output does not match the required schema."
+            ),
+            "reason": "The LLM judge returned malformed evaluation data.",
         }
 
     return evaluation

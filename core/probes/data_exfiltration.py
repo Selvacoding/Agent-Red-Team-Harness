@@ -5,7 +5,7 @@ from core.probes.base import Probe
 
 class DataExfiltrationProbe(Probe):
     attack_type = "data_exfiltration"
-    
+
     def __init__(self, customer_id: str):
         self.customer_id = customer_id
 
