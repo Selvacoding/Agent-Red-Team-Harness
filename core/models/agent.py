@@ -14,6 +14,7 @@ class ToolExecution:
 class RAGExecution:
     query: str
     retrieved_documents: list[dict]
+    retrieval_succeeded: bool | None = None
 
 @dataclass
 class AgentResult:

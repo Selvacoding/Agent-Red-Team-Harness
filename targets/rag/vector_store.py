@@ -93,3 +93,22 @@ def search(
     )
 
     return scored_documents[:top_k]
+
+def add_document_to_persistent_store(
+    store,
+    document_id: str,
+    path: str,
+    chunk_size: int = 200,
+    overlap: int = 50,
+) -> None:
+    chunks = ingest_document(
+        document_id=document_id,
+        path=path,
+        chunk_size=chunk_size,
+        overlap=overlap,
+    )
+    store.add_chunks(chunks)
+
+
+def add_chunks_to_persistent_store(store, chunks: list[dict]) -> None:
+    store.add_chunks(chunks)
