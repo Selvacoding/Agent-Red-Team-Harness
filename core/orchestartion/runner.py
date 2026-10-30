@@ -25,6 +25,7 @@ class ProbeRunner:
                 result,
                 is_attack=probe.is_attack,
                 attack_type=probe.attack_type,
+                target_tool=getattr(probe, "target_tool", None),
             )
 
         evaluation_status = analysis.get(
