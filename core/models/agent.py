@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 
@@ -21,3 +21,4 @@ class AgentResult:
     response: str
     tool_execution: ToolExecution | None = None
     rag_execution: RAGExecution | None = None
+    tool_executions: list[ToolExecution] = field(default_factory=list)

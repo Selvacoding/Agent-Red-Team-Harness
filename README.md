@@ -12,6 +12,7 @@ The project currently demonstrates two attack scenarios: **tool privilege escala
 - [Phase 1: Tool Privilege Escalation](#phase-1-tool-privilege-escalation)
 - [Phase 2: RAG Poisoning](#phase-2-rag-poisoning)
 - [Phase 3: Persistent RAG and Security Evaluation](#phase-3-persistent-rag-and-security-evaluation)
+- [Phase 4: Agent Framework Integrations](#phase-4-agent-framework-integrations)
 - [Prerequisites](#prerequisites)
 - [Setup](#setup)
 - [Run the Demonstrations](#run-the-demonstrations)
@@ -173,6 +174,50 @@ These results demonstrate a successful attack in the three observed trials, not 
 
 **Scope:** This phase evaluates retrieval and generated responses. It does not execute a real customer deletion.
 
+## Phase 4: Agent Framework Integrations
+
+**Objective:** Extend the harness to evaluate agents built with popular agent frameworks while preserving a common interface for security testing.
+
+### LangChain integration
+
+Phase 4.1 introduces a LangChain-based customer support agent using:
+
+- LangChain agent creation and tool integration.
+- Ollama with `llama3.2:latest` for local inference.
+- Shared customer tools for searching, retrieving, and deleting customers.
+- Protected and vulnerable authorization policies.
+
+### LangGraph integration
+
+Phase 4.2 introduces a LangGraph-based agent using:
+
+- LangGraph `StateGraph` for agent execution flow.
+- `ToolNode` for tool execution.
+- Conditional routing between the agent and tool nodes.
+- The same customer tools and authorization policies used by the LangChain integration.
+
+### Common adapter interface
+
+Both framework integrations implement the common `AgentAdapter` interface and return the shared `AgentResult` structure.
+
+The harness captures tool execution evidence, including:
+
+- Tool name and arguments.
+- Whether the operation was authorized.
+- Whether the operation actually executed.
+- The tool's execution result.
+
+`ProbeRunner` evaluates this evidence rather than relying solely on the agent's final natural-language response. This helps detect cases where an agent claims an operation was blocked even though the underlying tool executed successfully.
+
+### Security evaluation
+
+Both integrations support protected and intentionally vulnerable configurations:
+
+- **Protected:** Customer deletion is denied by the authorization policy.
+- **Vulnerable:** Customer deletion is allowed, demonstrating the impact of missing authorization controls.
+
+The same tool privilege escalation probe and security analyzer are used across both frameworks.
+
 ## Prerequisites
 
 - Python 3.11 or newer.
@@ -321,6 +366,22 @@ python scripts/run_phase2_experiment.py
 This runs the clean baseline followed by three independent poisoning trials and prints a summary of retrieval and behavioral results.
 
 Model responses can vary between runs, even when the experiment uses the same prompt and documents.
+
+### Phase 4: LangChain agent integration
+
+```bash
+python scripts/run_phase4_demo_langchain.py
+```
+
+### Phase 4: LangGraph agent integration
+
+```bash
+python scripts/run_phase4_demo_langgraph.py
+```
+
+Both demonstrations run protected and vulnerable configurations using the local Ollama model `llama3.2:latest`.
+
+**Note:** The vulnerable demonstrations intentionally delete demo customer `102` from the in-memory customer dataset. Do not connect these demonstrations to real customer data.
 
 ## Project Structure
 
