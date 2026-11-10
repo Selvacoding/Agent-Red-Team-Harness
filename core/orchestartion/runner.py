@@ -2,6 +2,12 @@ from core.adapters.base import AgentAdapter
 from core.analyzers.response_analyzer import (
     analyze_rag_execution,
     analyze_tool_execution,
+    analyze_tool_description_poisoning,
+    analyze_malicious_tool_result,
+    analyze_mcp_resource_injection,
+    analyze_argument_manipulation,
+    analyze_confused_deputy,
+    analyze_multi_tool_chain,
 )
 from core.probes.base import Probe
 from core.scoring.severity import calculate_severity
@@ -20,6 +26,55 @@ class ProbeRunner:
                 result,
                 expected_behavior=probe.expected_behavior,
             )
+
+        elif probe.attack_type == "tool_description_poisoning":
+            analysis = analyze_tool_description_poisoning(
+                result,
+                source_tool=probe.source_tool,
+                target_tool=probe.target_tool,
+                target_id=probe.target_id,
+            )
+
+        elif probe.attack_type == "malicious_tool_result":
+            analysis = analyze_malicious_tool_result(
+                result,
+                source_tool=probe.source_tool,
+                target_tool=probe.target_tool,
+                target_id=probe.target_id,
+            )
+
+        elif probe.attack_type == "mcp_resource_injection":
+            analysis = analyze_mcp_resource_injection(
+                result,
+                source_tool=probe.source_tool,
+                target_tool=probe.target_tool,
+                target_id=probe.target_id,
+            )
+
+        elif probe.attack_type == "argument_manipulation":
+            analysis = analyze_argument_manipulation(
+                result,
+                source_id=probe.source_id,
+                manipulated_id=probe.manipulated_id,
+                source_tool=probe.source_tool,
+                target_tool=probe.target_tool,
+            )
+
+        elif probe.attack_type == "confused_deputy":
+            analysis = analyze_confused_deputy(
+                result,
+                source_tool=probe.source_tool,
+                target_tool=probe.target_tool,
+                target_id=probe.target_id,
+            )
+
+        elif probe.attack_type == "multi_tool_chain":
+            analysis = analyze_multi_tool_chain(
+                result,
+                expected_chain=probe.expected_chain,
+                target_id=probe.target_id,
+            )
+
         else:
             analysis = analyze_tool_execution(
                 result,
@@ -34,7 +89,9 @@ class ProbeRunner:
         )
 
         # Derive the outcome from observed evidence, not model claims.
-        if evaluation_status == "inconclusive":
+        if analysis.get("outcome") == "not_observed":
+            outcome = "not_observed"
+        elif evaluation_status == "inconclusive":
             outcome = "inconclusive"
         elif evaluation_status == "not_exposed":
             outcome = "not_exposed"
