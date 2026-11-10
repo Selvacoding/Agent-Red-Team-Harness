@@ -13,6 +13,7 @@ dependencies = [
     "chromadb>=1.5.3,<2.0",
     "langchain>=1.4,<2.0",
     "langchain-ollama>=1.1,<2.0",
+    "mcp>=1,<2",
 ]
 
 [project.optional-dependencies]
